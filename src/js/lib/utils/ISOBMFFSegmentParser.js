@@ -11,10 +11,7 @@ var ISOBMFFSegmentParser = function(segmentData) {
         _segmentStartTime = NaN,
         _segmentEndTime = NaN,
         _segmentDuration = NaN,
-        _majorBrand,
-        _compatBrands,
         _majorBrandLen = 8,
-        _compatBrandsLen = 8,
         _typeBoxOffset = 4,
         _int32Size = 4,
         _int64Size = 8,
@@ -276,7 +273,7 @@ var ISOBMFFSegmentParser = function(segmentData) {
             runningIndex += _int32Size;
 
             var _segmentDurationArray = new Uint8Array(hdData.slice(runningIndex, runningIndex + _mvhdValuesBytes));
-            segmentDuration = _intValueFromHexByteArray(_segmentDurationArray) / segmentTimeScale;
+            segmentDuration = (_intValueFromHexByteArray(_segmentDurationArray) / segmentTimeScale);
             runningIndex += _mvhdValuesBytes;
 
             return [segmentTimeScale, segmentDuration];
@@ -319,7 +316,7 @@ var ISOBMFFSegmentParser = function(segmentData) {
             _sidxEarliestPresTime = _intValueFromHexByteArray(presTimeArray);
 
             // Get the segment start time.
-            _segmentStartTime = _sidxEarliestPresTime / _segmentTimeScale;
+            _segmentStartTime = (_sidxEarliestPresTime / _segmentTimeScale);
             console.log("Segment Presentation Start Time: ", _segmentStartTime);
 
             runningIndex += _sidxPresTimeAndOffsetBytes;
@@ -334,7 +331,7 @@ var ISOBMFFSegmentParser = function(segmentData) {
             var subSegmentDur = 0;
 
             // Run through each sub segment in the box and add up the durations.
-            for (var eachSeg:int = 0; eachSeg < _sidxNumSubSegments; eachSeg++) {
+            for (var eachSeg = 0; eachSeg < _sidxNumSubSegments; eachSeg++) {
                 // Skip the reference type and size.
                 runningIndex += _sidxSubSegmentRefBytes;
 
@@ -345,12 +342,12 @@ var ISOBMFFSegmentParser = function(segmentData) {
 
             // Get the segment end time.
             _sidxTotalSubSegmentDuration = subSegmentDur;
-            _segmentEndTime = (_sidxEarliestPresTime + _sidxTotalSubSegmentDuration) / _segmentTimeScale;
+            _segmentEndTime = ((_sidxEarliestPresTime + _sidxTotalSubSegmentDuration) / _segmentTimeScale);
             console.log("Segment Presentation End Time: ", _segmentEndTime);
 
         }
         catch (e) {
-            console.info ("Error parsing segment index box data. Unable to retrieve timestamps from the segment data.")
+            console.info ("Error parsing segment index box data. Unable to retrieve timestamps from the segment data.");
         }
 
     },
@@ -385,23 +382,23 @@ var ISOBMFFSegmentParser = function(segmentData) {
             var tfdtData = tfdtBuffer.slice(_tfdt.length);
             runningIndex = 0;
 
-            var version = tfdtData.slice(0, _tfdtVersionLength);
+            version = tfdtData.slice(0, _tfdtVersionLength);
 
             runningIndex += _tfdtVersionLength;
-            var flags = sidxData.slice(runningIndex, runningIndex + _tfdtFlagsLength);
+            var flags = tfdtData.slice(runningIndex, runningIndex + _tfdtFlagsLength);
 
             runningIndex += _tfdtFlagsLength;
 
             var _baseMediaDecodeTimeBytes  = (version == "1") ? _int64Size : _int32Size;
             var baseMediaDecodeTimeArray = new Uint8Array(tfdtData.slice(runningIndex, runningIndex + _baseMediaDecodeTimeBytes));
-            _tfdtBaseMediaDecodeTime = _intValueFromHexByteArray(baseMediaDecodeTimeArray);
+            var _tfdtBaseMediaDecodeTime = _intValueFromHexByteArray(baseMediaDecodeTimeArray);
 
 
             var trunBuffer = _segmentData.slice(trunIndex);
             var trunData = trunBuffer.slice(_trun.length);
             runningIndex = 0;
 
-            var version = trunBuffer.slice(0, _trunVersionLength);
+            version = trunBuffer.slice(0, _trunVersionLength);
             runningIndex += _trunVersionLength;
 
             var trunFlags = trunBuffer.slice(runningIndex, runningIndex + _trunFlagsLength);
@@ -429,7 +426,7 @@ var ISOBMFFSegmentParser = function(segmentData) {
             runningIndex = (_trunFirstSampleFlagsPresent) ? runningIndex + _trunFirstSampleFlagsBytes : runningIndex;
             var totalSampleDur = 0;
 
-            for (var eachSample:int = 0; eachSample < _trunSampleCount; eachSample++) {
+            for (var eachSample = 0; eachSample < _trunSampleCount; eachSample++) {
 
                 if (_trunSampleDurationPresent)
                 {
@@ -446,18 +443,18 @@ var ISOBMFFSegmentParser = function(segmentData) {
                 if (!_trunSampleCompositionOffsetPresent)
                 {
                     _trunSampleCompositionOffset = _tfdtBaseMediaDecodeTime;
-                    _segmentStartTime = _trunSampleCompositionOffset / _segmentTimeScale;
+                    _segmentStartTime = (_trunSampleCompositionOffset / _segmentTimeScale);
                     _segmentEndTime = (!isNaN(_segmentDuration)) ? _segmentStartTime + _segmentDuration : NaN;
                 }
                 // Get the composition offset only for the first frame.
                 else
                 {
-                    if (eachSample == 0) {
+                    if (eachSample === 0) {
                         // Still need to make the signed vs. unsigned differentiation.
                         var trunSampleCompositionOffsetArray = new Uint8Array(trunBuffer.slice(runningIndex, runningIndex + _trunSampleCompositionOffsetBytes));
                         _trunSampleCompositionOffset = _intValueFromHexByteArray(trunSampleCompositionOffsetArray);
                         console.log("CTS OFFSET IN FIRST SAMPLE FRAME: ", _trunSampleCompositionOffset);
-                        _segmentStartTime = (_tfdtBaseMediaDecodeTime + _trunSampleCompositionOffset) / _segmentTimeScale;
+                        _segmentStartTime = ((_tfdtBaseMediaDecodeTime + _trunSampleCompositionOffset) / _segmentTimeScale);
                         console.log("START TIME BASED ON THE FIRST SAMPLE FRAME: ", _segmentStartTime);
                     }
 
@@ -465,19 +462,19 @@ var ISOBMFFSegmentParser = function(segmentData) {
                 }
             }
 
-            _segmentDuration = totalSampleDur / _segmentTimeScale;
+            _segmentDuration = (totalSampleDur / _segmentTimeScale);
             _segmentEndTime  = _segmentStartTime + _segmentDuration;
 
         }
         catch (e) {
-            console.info ("Error parsing track fragment box data. Unable to retrieve timestamps from the track data either.")
+            console.info ("Error parsing track fragment box data. Unable to retrieve timestamps from the track data either.");
         }
-    }
+    };
 
     // Define a getter and setter for initSegParsed.
     Object.defineProperty(this, 'segmentType', {
 get: function() {
-            return _isInitSegment == false ? _mediaSegmentType : _initSegmentType;
+            return _isInitSegment === false ? _mediaSegmentType : _initSegmentType;
         }
     });
 
